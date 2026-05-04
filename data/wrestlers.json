@@ -10,16 +10,6 @@
       "damage": 10,
       "afterUse": "discard",
       "onHitEffects": [{ "type": "add_pinfall", "card": "Fail", "target": "opponent", "amount": 1 }]
-    },
-    "finisher": {
-      "id": "joey_finisher",
-      "name": "Trawler Drop",
-      "type": "attack",
-      "rarity": "special",
-      "validSlot": 3,
-      "damage": 15,
-      "afterUse": "exhaust",
-      "onHitEffects": [{ "type": "add_pinfall", "card": "Fail", "target": "opponent", "amount": 1 }]
     }
   },
   {
@@ -32,16 +22,6 @@
       "validSlot": 2,
       "damage": 9,
       "afterUse": "discard",
-      "onHitEffects": [{ "type": "add_pinfall", "card": "Fail", "target": "opponent", "amount": 1 }]
-    },
-    "finisher": {
-      "id": "benji_finisher",
-      "name": "Shut the Lid",
-      "type": "attack",
-      "rarity": "special",
-      "validSlot": 3,
-      "damage": 14,
-      "afterUse": "exhaust",
       "onHitEffects": [{ "type": "add_pinfall", "card": "Fail", "target": "opponent", "amount": 1 }]
     }
   },
@@ -56,16 +36,6 @@
       "damage": 9,
       "afterUse": "discard",
       "onHitEffects": [{ "type": "add_pinfall", "card": "Kickout", "target": "self", "amount": 1 }]
-    },
-    "finisher": {
-      "id": "jamie_finisher",
-      "name": "Best Shape Bomb",
-      "type": "attack",
-      "rarity": "special",
-      "validSlot": 3,
-      "damage": 16,
-      "afterUse": "exhaust",
-      "onHitEffects": [{ "type": "add_pinfall", "card": "Fail", "target": "opponent", "amount": 2 }]
     }
   }
 ]

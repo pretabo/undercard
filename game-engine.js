@@ -1188,10 +1188,6 @@
       deck.push(normalizeCard(wrestler.signature));
     }
 
-    if (wrestler.finisher) {
-      deck.push(normalizeCard(wrestler.finisher));
-    }
-
     return deck;
   }
 

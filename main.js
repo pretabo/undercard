@@ -46,10 +46,13 @@ const dom = {
   logModalBackdrop: document.querySelector("#log-modal .log-modal__backdrop"),
   matchLogList: document.getElementById("match-log-list"),
   closeCardButton: document.getElementById("close-card-button"),
+  closePinButton: document.getElementById("close-pin-button"),
   closeRollOffButton: document.getElementById("close-rolloff-button"),
   closeHandMenuButton: document.getElementById("close-hand-menu-button"),
   cardModal: document.getElementById("card-modal"),
   cardModalBackdrop: document.querySelector("#card-modal .card-modal__backdrop"),
+  pinModal: document.getElementById("pin-modal"),
+  pinModalBackdrop: document.querySelector("#pin-modal .pin-modal__backdrop"),
   rollOffModal: document.getElementById("rolloff-modal"),
   rollOffModalBackdrop: document.querySelector("#rolloff-modal .rolloff-modal__backdrop"),
   handMenuModal: document.getElementById("hand-menu-modal"),
@@ -62,6 +65,8 @@ const dom = {
   cardModalReason: document.getElementById("card-modal-reason"),
   cardModalEffect: document.getElementById("card-modal-effect"),
   cardModalAction: document.getElementById("card-modal-action"),
+  pinModalTitle: document.getElementById("pin-modal-title"),
+  pinModalStats: document.getElementById("pin-modal-stats"),
   rollOffAttackerName: document.getElementById("rolloff-attacker-name"),
   rollOffAttackerRoll: document.getElementById("rolloff-attacker-roll"),
   rollOffAttackerCard: document.getElementById("rolloff-attacker-card"),
@@ -114,6 +119,8 @@ function bindEvents() {
   dom.logModalBackdrop?.addEventListener("click", closeLogModal);
   dom.closeCardButton?.addEventListener("click", closeCardModal);
   dom.cardModalBackdrop?.addEventListener("click", closeCardModal);
+  dom.closePinButton?.addEventListener("click", closePinModal);
+  dom.pinModalBackdrop?.addEventListener("click", closePinModal);
   dom.closeRollOffButton?.addEventListener("click", closeRollOffModal);
   dom.rollOffModalBackdrop?.addEventListener("click", closeRollOffModal);
   dom.closeHandMenuButton?.addEventListener("click", closeHandMenuModal);
@@ -136,6 +143,11 @@ function bindEvents() {
 
     if (dom.cardModal && !dom.cardModal.hidden) {
       closeCardModal();
+      return;
+    }
+
+    if (dom.pinModal && !dom.pinModal.hidden) {
+      closePinModal();
       return;
     }
 
@@ -209,8 +221,8 @@ function validateGameData() {
   });
 
   gameData.wrestlers.forEach((wrestler) => {
-    if (!wrestler.name || !wrestler.signature || !wrestler.finisher) {
-      throw new Error("Each wrestler needs a name, signature, and finisher.");
+    if (!wrestler.name || !wrestler.signature) {
+      throw new Error("Each wrestler needs a name and signature.");
     }
 
     const deck = Engine.buildDeckForWrestler(wrestler, gameData.cardLookup, gameData.deckRecipe);
@@ -219,8 +231,8 @@ function validateGameData() {
 }
 
 function validateDeckForWrestler(deck, wrestlerName) {
-  if (deck.length !== 50) {
-    throw new Error(`${wrestlerName}'s deck must contain exactly 50 cards.`);
+  if (deck.length !== 49) {
+    throw new Error(`${wrestlerName}'s deck must contain exactly 49 cards.`);
   }
 
   const counts = {};
@@ -308,8 +320,7 @@ function pickRandomMatchup() {
 function cloneWrestler(wrestler) {
   return {
     name: wrestler.name,
-    signature: { ...wrestler.signature, onHitEffects: cloneEffects(wrestler.signature.onHitEffects) },
-    finisher: { ...wrestler.finisher, onHitEffects: cloneEffects(wrestler.finisher.onHitEffects) }
+    signature: { ...wrestler.signature, onHitEffects: cloneEffects(wrestler.signature.onHitEffects) }
   };
 }
 
@@ -995,19 +1006,22 @@ function renderWrestlerPanel(state, wrestlerKey, panelDom) {
   const pinChance = calculatePinChance(pinSummary.fail, pinSummary.total);
 
   panelDom.name.textContent = wrestler.name;
-  panelDom.role.textContent = isAttacker ? "Attacker" : "Defender";
-  panelDom.role.classList.toggle("role-chip--attacker", isAttacker);
-  panelDom.role.classList.toggle("role-chip--defender", !isAttacker);
+  panelDom.role.textContent = "";
+  panelDom.role.hidden = true;
+  panelDom.card.classList.toggle("wrestler-block--attacker", isAttacker);
   panelDom.stats.innerHTML = `
     <span class="stat-pill">DMG ${wrestler.damage}</span>
     <span class="stat-pill">HAND ${wrestler.hand.length}</span>
     <span class="stat-pill">DECK ${wrestler.maneuverDeck.length}</span>
   `;
   panelDom.pin.innerHTML = `
-    <span class="stat-pill stat-pill--hot">FAIL ${pinSummary.fail}</span>
-    <span class="stat-pill">KICKOUT ${pinSummary.kickout}</span>
-    <span class="stat-pill">PIN ${formatPercent(pinChance)}</span>
+    <button type="button" class="stat-pill stat-pill--pin" aria-label="Open pin breakdown">
+      PIN ${formatPercent(pinChance)}
+    </button>
   `;
+  panelDom.pin.querySelector(".stat-pill--pin")?.addEventListener("click", () => {
+    openPinModal(state, wrestlerKey);
+  });
   const statusLine = buildWrestlerStatusLine(state, wrestlerKey);
   panelDom.status.textContent = statusLine;
   panelDom.status.hidden = !statusLine;
@@ -1107,8 +1121,6 @@ function renderHand(currentApp) {
       <div class="hand-card__front">
         <span class="hand-card__type hand-card__type--${entry.card.type}">${capitalize(entry.card.type)}</span>
         <span class="hand-card__title">${entry.card.name}</span>
-        <span class="hand-card__value">${formatCardPrimaryValue(entry.card)}</span>
-        <span class="hand-card__label">${formatCardPrimaryLabel(entry.card)}</span>
       </div>
     `;
     button.addEventListener("click", () => openCardModal(currentApp, entry));
@@ -1215,6 +1227,29 @@ function openLogModal() {
 
 function closeLogModal() {
   dom.logModal.hidden = true;
+  syncModalState();
+}
+
+function openPinModal(state, wrestlerKey) {
+  if (!dom.pinModal || !dom.pinModalTitle || !dom.pinModalStats) {
+    return;
+  }
+
+  const wrestler = state.players[wrestlerKey];
+  const pinSummary = Engine.getPinfallSummary(wrestler);
+
+  dom.pinModalTitle.textContent = wrestler.name;
+  dom.pinModalStats.textContent = `Fail ${pinSummary.fail} / Kickout ${pinSummary.kickout}`;
+  dom.pinModal.hidden = false;
+  syncModalState();
+}
+
+function closePinModal() {
+  if (!dom.pinModal) {
+    return;
+  }
+
+  dom.pinModal.hidden = true;
   syncModalState();
 }
 
@@ -1338,6 +1373,7 @@ function syncModalState() {
   const anyModalOpen =
     (dom.logModal && !dom.logModal.hidden) ||
     (dom.cardModal && !dom.cardModal.hidden) ||
+    (dom.pinModal && !dom.pinModal.hidden) ||
     (dom.rollOffModal && !dom.rollOffModal.hidden) ||
     (dom.handMenuModal && !dom.handMenuModal.hidden);
   document.body.classList.toggle("modal-open", Boolean(anyModalOpen));
